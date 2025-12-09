@@ -59,6 +59,7 @@ function checkTableIntegrity(thresholdMinutes) {
 
     // 定数定義
     const targetTableId = 'my-specific-data-table'; 
+    const checkboxCol = 0
     const timeIdStartCol = 0
     const timeIdEndCol = 1
     const timePcStartCol = 2
@@ -163,15 +164,22 @@ function checkTableIntegrity(thresholdMinutes) {
             }
         }
 
-        // 5. エラーがある場合は視覚的に強調
-        if (rowError!=0) {
+        // 5. セル内のチェックボックスを取得
+        //const checkbox = cells[checkboxCol].querySelector('input[type="checkbox"]');
+
+        // 6. エラーがない場合、チェックを入れる
+        if (rowError==0) {
+            //checkbox.checked = true;
+
+        // 7. エラーがある場合、視覚的に強調
+        } else {
             row.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
-        }
-        if (rowError==1) {
-            cells[timeApStartCol].style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
-        }
-        if (rowError==2) {
-            cells[timeApEndCol].style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+            if (rowError==1) {
+                cells[timeApStartCol].style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+            }
+            if (rowError==2) {
+                cells[timeApEndCol].style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+            }
         }
     }
     
