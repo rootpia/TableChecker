@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+
 /**
  * Webページに注入され、表の整合性をチェックする関数。
  * @param {number} thresholdMinutes - 実行時に指定された閾値（分）
@@ -68,7 +69,7 @@ function checkTableIntegrity(thresholdMinutes) {
     // Table取得
     const targetTable = document.getElementById(targetTableId);
     if (!targetTable || targetTable.tagName !== 'TABLE') {
-        errors.push(`✅ ID '${targetTableId}' のテーブルが見つかりませんでした。`);
+        errors.push(`🚨 ID '${targetTableId}' のテーブルが見つかりませんでした。`);
         return errors;
     }
 
@@ -96,7 +97,7 @@ function checkTableIntegrity(thresholdMinutes) {
     for (let i = 1; i < rows.length; i++) {   // 行は1オリジン
         const row = rows[i];
         const cells = row.querySelectorAll('td, th');
-        let rowError = 0; // この行にエラーがあったかどうかのフラグ
+        let rowError = 0; // 該当行にエラーがあったかどうかのフラグ
         
         // 1. 各時刻を取得
         const timeA = timeToMinutes(cells[timeIdStartCol].textContent.trim());
@@ -109,12 +110,12 @@ function checkTableIntegrity(thresholdMinutes) {
         // 値が不正な場合はスキップ
         if ([timeE, timeF].some(isNaN)) {
             if (isNaN(timeE)) {
-                errors.push(`Row ${i} : 開始時間エラー`);
+                errors.push(`Row ${i} : 開始時刻エラー`);
                 row.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
                 cells[timeApStartCol].style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
             }
             if (isNaN(timeF)) {
-                errors.push(`Row ${i} : 終了時間エラー`);
+                errors.push(`Row ${i} : 終了時刻エラー`);
                 row.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
                 cells[timeApEndCol].style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
             }
@@ -125,7 +126,7 @@ function checkTableIntegrity(thresholdMinutes) {
         let timeStart = NaN;
         let timeEnd = NaN;
 
-        // 開始時間
+        // 開始時刻
         if (isNaN(timeA) && !isNaN(timeC)) {
             timeStart = timeC;
         } else if (!isNaN(timeA) && isNaN(timeC)) {
@@ -135,7 +136,7 @@ function checkTableIntegrity(thresholdMinutes) {
         } else {
             timeStart = NaN;
         }
-        // 終了時間
+        // 終了時刻
         if (isNaN(timeB) && !isNaN(timeD)) {
             timeEnd = timeD;
         } else if (!isNaN(timeB) && isNaN(timeD)) {
@@ -146,18 +147,18 @@ function checkTableIntegrity(thresholdMinutes) {
             timeEnd = NaN;
         }
 
-        // 3. チェック条件 1: ①の時刻 < 5列目の時刻 < ①の時刻＋30分
+        // 3. チェック条件１: 開始時刻(客観) < 開始時刻(申請) < 開始時刻(客観)＋30分
         if (!isNaN(timeStart)) {
             if (timeE < timeStart || timeE > (timeStart + thresholdMinutes)) {
-                errors.push(`Row ${i} : 開始時間エラー`);
+                errors.push(`Row ${i} : 開始時刻エラー`);
                 rowError = 1;
             }
         }
 
-        // 4. チェック条件 2: ②の時刻 - 30分 < 6列目の時刻 < ②の時刻
+        // 4. チェック条件２: 終了時刻(客観) - 30分 < 終了時刻(申請) < 終了時刻(客観)
         if (!isNaN(timeEnd)) {
             if (timeF < (timeEnd - thresholdMinutes) || timeF > timeEnd) {
-                errors.push(`Row ${i} : 終了時間エラー`);
+                errors.push(`Row ${i} : 終了時刻エラー`);
                 rowError = 2;
             }
         }
@@ -175,12 +176,13 @@ function checkTableIntegrity(thresholdMinutes) {
     }
     
     // エラーが検出されなかった場合の処理
-    if (errors.length === 0 || errors.every(msg => msg.startsWith('✅'))) {
-        errors.unshift(`✅ ID '${targetTableId}' のテーブルで整合性が確認されました。`);
+    if (errors.length === 0) {
+        errors.push(`✅ 整合性エラーなし`);
     }
 
     return errors;
 }
+
 
 /**
  * チェック結果（エラー配列）をポップアップに表示する
@@ -191,23 +193,18 @@ function displayResults(results) {
     resultsDiv.innerHTML = ''; // クリア
 
     if (results.length === 0) {
-        resultsDiv.innerHTML = '<span class="success">✅ すべてのテーブルで整合性が確認されました。</span>';
+        resultsDiv.innerHTML = '<span class="error">not implemented pattern</span>';
+    } else if (results.length === 1 && results[0].startsWith('🚨')) {
+        // テーブルが見つからなかった場合
+         resultsDiv.innerHTML = `<span class="error">${results[0]}</span>`;
     } else if (results.length === 1 && results[0].startsWith('✅')) {
-        // テーブルが見つからなかったメッセージの場合
+        // エラーがなかった場合
          resultsDiv.innerHTML = `<span class="success">${results[0]}</span>`;
     } else {
-        const errorCount = results.filter(msg => msg.startsWith('🚨')).length;
-        
-        if (errorCount > 0) {
-             resultsDiv.innerHTML = `<span class="error">${errorCount} 件の整合性エラーが見つかりました。</span><hr>`;
-        } else {
-             resultsDiv.innerHTML = `<span class="success">チェック完了。</span><hr>`;
-        }
-
+        resultsDiv.innerHTML = `<span class="error">${results.length} 件の整合性エラーが見つかりました。</span><hr>`;
         const ul = document.createElement('ul');
         results.forEach(msg => {
             const li = document.createElement('li');
-            li.className = msg.startsWith('🚨') ? 'error' : '';
             li.textContent = msg;
             ul.appendChild(li);
         });
